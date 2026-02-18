@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OX 퀴즈 (랜덤 20 + 오답노트)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div class="badge" id="progress">0 / 20</div>
+        <div class="navbtns">
+          <button class="ghost" id="btnRestart">새로 20문제 뽑기</button>
+          <button class="ghost" id="btnWrong">오답노트 보기</button>
+          <button class="ghost hidden" id="btnBack">퀴즈로 돌아가기</button>
+          <button class="ghost hidden" id="btnClearWrong">오답노트 비우기</button>
+        </div>
+        <div class="badge" id="score">점수: 0</div>
+      </div>
+
+      <div id="quizView">
+        <div class="q" id="question">불러오는 중...</div>
+
+        <div class="btns">
+          <button class="ox o" id="btnO">O</button>
+          <button class="ox x" id="btnX">X</button>
+        </div>
+
+        <div class="result hidden" id="resultBox">
+          <h3 id="resultTitle"></h3>
+          <div class="explain" id="explain"></div>
+        </div>
+
+        <div class="footer">
+          <button class="ghost" id="btnNext">다음</button>
+          <div class="small" id="meta"></div>
+        </div>
+      </div>
+
+      <div id="wrongView" class="hidden">
+        <div class="small">오답노트는 이 기기(브라우저)에 저장됩니다. (localStorage)</div>
+        <div class="list" id="wrongList"></div>
+      </div>
+    </div>
+
+    <p class="small">
+      규칙: 정답 X는 '정답 X' 표기가 있고, 정답 O는 표기 없이 해설만 있습니다. (29번은 파일 자체에 없음)
+    </p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
