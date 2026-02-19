@@ -149,13 +149,31 @@ function finish(){
   setBtnsEnabled(false); box.classList.add('hidden'); locked=true;
 }
 
+function showResult(picked){
+  const q=QUIZ[idx];
+  const correct=String(q.answer||'').trim().toUpperCase();
+  const p=String(picked||'').trim().toUpperCase();
+  const ok = (p===correct);
+  if(ok) score+=1;
+
+  // 오답 목록 관리
+  const key=String(q.id)+'|'+q.statement;
+  if(MODE==='wrongOnly'){
+    if(ok) removeWrongByKey(key);
+    else addWrong(q, p);
+  }else{
+    if(!ok) addWrong(q, p);
+  }
+
   box.classList.remove('hidden');
   box.classList.toggle('good', ok);
   box.classList.toggle('bad', !ok);
   title.textContent= ok ? `정답 (정답: ${correct})` : `오답 (정답: ${correct})`;
   explain.textContent= (q.explanation && q.explanation.trim()) ? q.explanation : '(해설 추출 누락)';
   locked=true; setBtnsEnabled(false);
+  updateMeta(q);
 }
+
 
 btnO.addEventListener('click', ()=>{ if(!locked) showResult('O'); });
 btnX.addEventListener('click', ()=>{ if(!locked) showResult('X'); });
