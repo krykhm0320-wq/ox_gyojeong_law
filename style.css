@@ -3,7 +3,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-ser
 .card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 4px 14px rgba(0,0,0,.06)}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .badge{font-size:12px;background:#eef2ff;color:#3730a3;padding:6px 10px;border-radius:999px}
-.q{font-size:18px;line-height:1.6;white-space:pre-wrap}
+.q{font-size:18px;line-height:1.6;white-space:normal}
 .btns{margin-top:14px;display:flex;gap:10px}
 button{border:0;border-radius:12px;padding:12px 14px;font-size:16px;cursor:pointer}
 .ox{flex:1}
@@ -15,7 +15,7 @@ button{border:0;border-radius:12px;padding:12px 14px;font-size:16px;cursor:point
 .result.good{background:#ecfdf5}
 .result.bad{background:#fef2f2}
 .result h3{margin:0 0 6px 0;font-size:15px}
-.explain{white-space:pre-wrap;line-height:1.6;font-size:14px}
+.explain{white-space:normal;line-height:1.6;font-size:14px}
 .footer{margin-top:14px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
 .small{font-size:12px;color:#6b7280}
 .hidden{display:none}

@@ -1,25 +1,34 @@
-function prettifyText(s, keepParagraphs=true){
-  // 원본 줄바꿈은 화면 가독성에 도움 안 되는 경우가 많아서 대부분 제거.
-  // - 기본: 문단(빈 줄)은 유지(keepParagraphs=true)
-  // - 문단 내부 줄바꿈/강제개행은 공백으로 합침
-  // - 다만 '목록 형태'는 줄바꿈 유지
+function prettifyStatement(s){
+  // 문제는 원본 줄바꿈을 무시하고 한 줄로 보기 좋게 정리
+  if(!s) return '';
+  s = String(s).replace(/\r/g,'');
+  // 단어 중간에서 끊긴 줄바꿈 복구
+  s = s.replace(/([가-힣])\n{1,}([가-힣])(?=[가-힣])/g, '$1$2');
+  // 나머지 줄바꿈은 공백으로
+  s = s.replace(/\n+/g, ' ');
+  return s.replace(/\s{2,}/g,' ').trim();
+}
+
+function prettifyText(s){
+  // PDF 텍스트 추출 특유의 어색한 줄바꿈 정리:
+  // - 문단 구분(빈 줄)은 유지
+  // - 문단 내부의 단일 줄바꿈은 공백으로 치환
   if(!s) return '';
   s = String(s).replace(/\r/g,'');
   // 단어 중간에서 끊긴 줄바꿈(예: 교\n\n육) 복구
-  s = s.replace(/([가-힣])\n{1,}([가-힣])(?=[가-힣])/g, '$1$2');
-
-  const splitRe = keepParagraphs ? /\n{2,}/ : /\n+/;
-  const paras = s.split(splitRe).map(p=>{
-    const lines = p.split(/\n+/).map(x=>x.trim()).filter(x=>x.length>0);
-    if(lines.length===0) return '';
+  s = s.replace(/([가-힣])\n{2,}([가-힣])(?=[가-힣])/g, '$1$2');
+  // normalize multiple spaces
+  const paras = s.split(/\n{2,}/).map(p=>{
+    // keep bullet/numbered lines as-is if they look like list
+    // but still remove mid-line breaks
+    const lines = p.split(/\n/).map(x=>x.trim()).filter(x=>x.length>0);
+    // If it looks like a multi-line list (many lines starting with bullet/number), keep newlines
     const listLike = lines.length>=2 && lines.every(x=>/^([0-9]+[.)]|[-*•]|①|②|③|④|⑤|⑥|⑦|⑧|⑨|⑩)/.test(x));
     if(listLike) return lines.join('\n');
     return lines.join(' ').replace(/\s{2,}/g,' ').trim();
-  }).filter(Boolean);
-
-  return keepParagraphs ? paras.join('\n\n') : paras.join(' ');
+  });
+  return paras.join('\n\n').trim();
 }
-
 
 async function loadQuestions(){
   const res = await fetch('questions.json', {cache:'no-store'});
@@ -46,6 +55,7 @@ function addWrong(q, userAnswer){
 }
 
 let ALL=[], QUIZ=[], idx=0, score=0, locked=false;
+let MODE='random20'; // 'random20' | 'sequential'
 
 const elQ=document.getElementById('question');
 const elProg=document.getElementById('progress');
@@ -57,6 +67,7 @@ const btnX=document.getElementById('btnX');
 const btnNext=document.getElementById('btnNext');
 const btnNextTop=document.getElementById('btnNextTop');
 const btnRestart=document.getElementById('btnRestart');
+const btnSequential=document.getElementById('btnSequential');
 const btnWrong=document.getElementById('btnWrong');
 const btnBack=document.getElementById('btnBack');
 const btnClearWrong=document.getElementById('btnClearWrong');
@@ -77,19 +88,34 @@ function sample20(){
   shuffle(copy);
   return copy.slice(0,20);
 }
+
+function buildSequential(){
+  // 안전하게 id 오름차순으로 정렬 (JSON 순서가 바뀌어도 항상 1번부터)
+  return ALL.slice().sort((a,b)=>{
+    const ai=Number(a.id); const bi=Number(b.id);
+    if(Number.isFinite(ai) && Number.isFinite(bi)) return ai-bi;
+    return String(a.id).localeCompare(String(b.id));
+  });
+}
+
+function totalCount(){
+  return QUIZ.length || 0;
+}
 function render(){
   const q=QUIZ[idx];
-  elQ.textContent=prettifyText(q.statement, false);
-  elProg.textContent=`${idx+1} / 20`;
+  elQ.textContent=prettifyStatement(q.statement);
+  elProg.textContent=`${idx+1} / ${totalCount()}`;
   elScore.textContent=`점수: ${score}`;
-  elMeta.textContent=`문항번호: ${q.id} / 전체문항(탑재): ${ALL.length} (29번 제외)`;
+  const modeLabel = (MODE==='sequential') ? '순서대로' : '랜덤20제';
+  elMeta.textContent=`모드: ${modeLabel} · 문항번호: ${q.id} / 전체문항(탑재): ${ALL.length} (29번 제외)`;
   box.classList.add('hidden'); box.classList.remove('good','bad');
   title.textContent=''; explain.textContent='';
   locked=false; setBtnsEnabled(true);
 }
 function finish(){
-  elQ.textContent=`끝. 점수 ${score}/20`;
-  elProg.textContent='20 / 20';
+  const t=totalCount();
+  elQ.textContent=`끝. 점수 ${score}/${t}`;
+  elProg.textContent=`${t} / ${t}`;
   elMeta.textContent=`오답노트: ${loadWrong().length}개`;
   setBtnsEnabled(false); box.classList.add('hidden'); locked=true;
 }
@@ -136,7 +162,7 @@ function renderWrong(){
   const list=loadWrong();
   if(list.length===0){ wrongList.innerHTML='<div class="item">오답이 없음.</div>'; return; }
   wrongList.innerHTML=list.map((x,i)=>{
-    const safeStmt=prettifyText(x.statement, false).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeStmt=prettifyStatement(x.statement).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const safeExp=(x.explanation||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return `
       <div class="item">
@@ -151,19 +177,22 @@ function renderWrong(){
   }).join('');
 }
 
-btnRestart.addEventListener('click', ()=>{ restart(); });
+btnRestart.addEventListener('click', ()=>{ restart('random20'); });
+btnSequential.addEventListener('click', ()=>{ restart('sequential'); });
 btnWrong.addEventListener('click', ()=>{ setWrongMode(); });
 btnBack.addEventListener('click', ()=>{ setQuizMode(); });
 btnClearWrong.addEventListener('click', ()=>{ saveWrong([]); renderWrong(); });
 
-function restart(){
-  QUIZ=sample20(); idx=0; score=0; locked=false;
+function restart(mode){
+  MODE = mode || MODE || 'random20';
+  QUIZ = (MODE==='sequential') ? buildSequential() : sample20();
+  idx=0; score=0; locked=false;
   setQuizMode(); render();
 }
 
 (async ()=>{
   ALL=await loadQuestions();
-  restart();
+  restart('random20');
 })().catch(e=>{
   elQ.textContent='불러오기 실패: '+e.message;
 });
